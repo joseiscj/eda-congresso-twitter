@@ -8,10 +8,74 @@ theme: sandstone
 
 ```{r echo=FALSE, message=FALSE, warning=FALSE}
 library(tidyverse)
+library(ggbeeswarm)
+library(modelr)
+library(broom)
 source(here::here("code/lib.R"))
 theme_set(theme_bw())
 ```
 
 ```{r read}
-atividade = read_projectdata()
+parlamentares = read_projectdata()
 ```
+
+```{r}
+
+parlamentares = mutate(parlamentares, engajamentoLog = log10(engaj_total), segueLog = log10(segue), seguidoresLog = log10(seguidores), n_proprioLog = log10(n_proprio), n_retweetLog = log10(n_retweet))
+
+parlamentares %>% 
+    filter(n_proprio >= 10, !is.na(twitter), !is.na(seguidores), engaj_mediano > 0) %>% 
+    ggplot(aes(x = engaj_total, y = segue + seguidores + n_proprio + n_retweet)) + 
+    geom_point() + 
+    scale_y_log10() + 
+    scale_x_log10()
+
+parlamentares_ = parlamentares %>% filter(!is.na(engajamentoLog), !is.na(segueLog), !is.na(seguidoresLog), !is.na(n_proprioLog), !is.na(n_retweetLog),  engajamentoLog > 0, segueLog > 0,  seguidoresLog > 0, n_proprioLog > 0, n_retweetLog > 0)
+
+mod1 = lm(formula = engajamentoLog ~ casa + segueLog + seguidoresLog + n_proprioLog + n_retweetLog, data = parlamentares_)
+
+ggplot(atividade, aes(x = log10(engaj_total), log10(segue) + log10(seguidores) + log10(n_proprio) + log10(n_retweet))) + 
+  geom_point(alpha = 0.4) + 
+  geom_smooth(method = "lm", se = FALSE)
+
+tidy(mod1)
+glance(mod1)
+```
+
+  Regressão linear múltipla foi utilizada para analisar a associação entre casa, quantas pessoas o parlamentar segue, quantas pessoas seguem o parlamentar, quanto o parlamentar tuíta, quanto o parlamentar retuíta e o engajamento total. Os resultados da regressão indicam que um modelo no formato VarDep = casa + segue, seguidores, n_proprio, n_retweet explicam 68,39% da variância da variável de resposta (R2 = 0,684). 
+O aumento de 1 unidade de parlamentar de casa (cãmara) produz uma mudança de 0.13 a mais do que senado em engaj_total.
+O aumento de 1 unidade de segue medida como perfil produz uma mudança de -0.34 em engaj_total.
+O aumento de 1 unidade de seguidor medida como perfil produz uma mudança de 0.59 em engaj_total.
+O aumento de 1 unidade de n_proprio medida como tuíter próprio produz uma mudança de 0.36 em engaj_total.
+O aumento de 1 unidade de retuíte medida como perfil produz uma mudança de 0.94 em engaj_total.
+Portanto, podemos dizer que as variáveis 'casa', 'segue', 'seguidores', 'n-proprio', 'n_proprio' e 'n_retweet' explicam de forma razoável a variãncia de 'engaj_total', cerca de 69% da variação.
+
+```{r}
+parlamentares = mutate(parlamentares, engajamentoMedianoLog = log10(engaj_mediano), segueLog = log10(segue), seguidoresLog = log10(seguidores), n_proprioLog = log10(n_proprio), n_retweetLog = log10(n_retweet))
+
+parlamentares %>% 
+    filter(n_proprio >= 10, !is.na(twitter), !is.na(seguidores), engaj_mediano > 0) %>% 
+    ggplot(aes(x = engaj_mediano, y = segue + seguidores + n_proprio + n_retweet)) + 
+    geom_point() + 
+    scale_y_log10() + 
+    scale_x_log10()
+
+parlamentares_ = parlamentares %>% filter(!is.na(engajamentoMedianoLog), !is.na(segueLog), !is.na(seguidoresLog), !is.na(n_proprioLog), !is.na(n_retweetLog),  engajamentoMedianoLog > 0, segueLog > 0,  seguidoresLog > 0, n_proprioLog > 0, n_retweetLog > 0)
+
+mod1 = lm(formula = engajamentoMedianoLog ~ casa + segueLog + seguidoresLog + n_proprioLog + n_retweetLog, data = parlamentares_)
+
+ggplot(atividade, aes(x = log10(engaj_mediano), log10(segue) + log10(seguidores) + log10(n_proprio) + log10(n_retweet))) + 
+  geom_point(alpha = 0.4) + 
+  geom_smooth(method = "lm", se = FALSE)
+
+tidy(mod1)
+glance(mod1)
+```
+  Regressão linear múltipla foi utilizada para analisar a associação entre casa, quantas pessoas o parlamentar segue, quantas pessoas seguem o parlamentar, quanto o parlamentar tuíta, quanto o parlamentar retuíta e o engajamento total. Os resultados da regressão indicam que um modelo no formato VarDep = casa + segue, seguidores, n_proprio, n_retweet explicam 58,17% da variância da variável de resposta (R2 = 0,582). 
+O aumento de 1 unidade de parlamentar de casa (cãmara) produz uma mudança de 0.17 a mais do que senado em engaj_total.
+O aumento de 1 unidade de segue medida como perfil produz uma mudança de -0.39 em engaj_total.
+O aumento de 1 unidade de seguidor medida como perfil produz uma mudança de 0.76 em engaj_total.
+O aumento de 1 unidade de n_proprio medida como tuíter próprio produz uma mudança de -0.031 em engaj_total.
+O aumento de 1 unidade de retuíte medida como perfil produz uma mudança de 0.17 em engaj_total.
+Portanto, podemos dizer que as variáveis 'casa', 'segue', 'seguidores', 'n-proprio', 'n_proprio' e 'n_retweet' explicam de forma razoável a variãncia de 'engaj_total', cerca de 58% da variação.
+
